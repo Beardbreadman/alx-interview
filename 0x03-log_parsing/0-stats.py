@@ -1,41 +1,41 @@
 #!/usr/bin/python3
 import sys
+import signal
 
-status_code_count = {200: 0, 301: 0, 400: 0, 401: 0, 403: 0, 404: 0, 405: 0, 500: 0}
-total_file_size = 0
+# Function to handle keyboard interruption
+def signal_handler(sig, frame):
+    print_statistics()
+    sys.exit(0)
+
+# Register the signal handler for CTRL+C
+signal.signal(signal.SIGINT, signal_handler)
+
+# Function to print statistics
+def print_statistics():
+    print(f"Total file size: File size: {total_size}")
+    for code in sorted(status_codes.keys()):
+        print(f"{code}: {status_codes[code]}")
+
+# Initialize variables
+total_size = 0
+status_codes = {str(code): 0 for code in [200, 301, 400, 401, 403, 404, 405, 500]}
 line_count = 0
 
 try:
     for line in sys.stdin:
-        line_count += 1
-        if line_count % 10 == 0:
-            print("Total file size: File size:", total_file_size)
-            for code, count in sorted(status_code_count.items()):
-                if count > 0:
-                    print(f"{code}: {count}")
-
         parts = line.split()
-        if len(parts) < 7:
-            continue
-
-        status_code = parts[-2]
-        try:
-            status_code = int(status_code)
-        except ValueError:
-            continue
-
-        if status_code in status_code_count:
-            status_code_count[status_code] += 1
-
-        file_size = parts[-1]
-        try:
-            file_size = int(file_size)
-            total_file_size += file_size
-        except ValueError:
-            continue
-
+        # Check if the line has the correct format
+        if len(parts) == 7 and parts[5].isdigit() and parts[6].isdigit():
+            status_code = parts[5]
+            file_size = int(parts[6])
+            # Update total file size and status code count
+            total_size += file_size
+            if status_code in status_codes:
+                status_codes[status_code] += 1
+            line_count += 1
+            # Print statistics after every 10 lines
+            if line_count % 10 == 0:
+                print_statistics()
 except KeyboardInterrupt:
-    print("Total file size: File size:", total_file_size)
-    for code, count in sorted(status_code_count.items()):
-        if count > 0:
-            print(f"{code}: {count}")
+    # Handle any keyboard interruption
+    print_statistics()
